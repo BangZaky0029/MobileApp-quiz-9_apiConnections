@@ -26,7 +26,6 @@
  *
  * ============================================================================
  */
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -38,7 +37,9 @@ import {
   Dimensions,
   StatusBar,
   Platform,
+  TouchableOpacity,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // § TypeScript Interfaces
@@ -113,6 +114,12 @@ const FoodDetailScreen: React.FC<FoodDetailScreenProps> = ({ mealId }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 2 Variables stored in AsyncStorage:
+  // Variable 1: Favorite status of the current meal
+  const [isFavorite, setIsFavorite] = useState<boolean>(false);
+  // Variable 2: Name/title of the previously viewed recipe
+  const [lastViewedName, setLastViewedName] = useState<string | null>(null);
+
   // ── Data Fetching ────────────────────────────────────────────────────────
   /**
    * useEffect — Fetches meal data whenever `mealId` changes.
@@ -129,14 +136,23 @@ const FoodDetailScreen: React.FC<FoodDetailScreenProps> = ({ mealId }) => {
         setLoading(true);
         setError(null);
 
+        // --- AsyncStorage Read Logic ---
+        // 1. Check if this meal is favorited
+        const favKey = `@fav_${mealId}`;
+        const savedFav = await AsyncStorage.getItem(favKey);
+        setIsFavorite(savedFav === "true");
+
+        // 2. Load the name of the previously viewed recipe before updating it
+        const historyKey = "@last_viewed_name";
+        const savedHistoryName = await AsyncStorage.getItem(historyKey);
+        setLastViewedName(savedHistoryName);
+
         // Build the API URL from the environment variable.
-        // Fallback to the direct TheMealDB URL if env is not set.
         const baseUrl =
           process.env.EXPO_PUBLIC_API_DETAIL_URL ||
           "https://www.themealdb.com/api/json/v1/1/lookup.php";
 
         const url = `${baseUrl}?i=${mealId}`;
-
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -145,13 +161,16 @@ const FoodDetailScreen: React.FC<FoodDetailScreenProps> = ({ mealId }) => {
 
         const data: IMealApiResponse = await response.json();
 
-        // TheMealDB returns { meals: null } for invalid IDs
         if (!data.meals || data.meals.length === 0) {
           throw new Error("Meal not found. Please check the meal ID.");
         }
 
-        // Map the first (and only) meal from the response array
-        setMeal(data.meals[0]);
+        const currentMeal = data.meals[0];
+        setMeal(currentMeal);
+
+        // --- AsyncStorage Write Logic ---
+        // Save this current recipe name as the last viewed recipe for future loads
+        await AsyncStorage.setItem(historyKey, currentMeal.strMeal);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "An unexpected error occurred.";
@@ -163,6 +182,23 @@ const FoodDetailScreen: React.FC<FoodDetailScreenProps> = ({ mealId }) => {
 
     fetchMealDetail();
   }, [mealId]);
+
+  /**
+   * Toggles the favorite status in AsyncStorage for the current recipe.
+   */
+  const toggleFavorite = async () => {
+    if (!meal) return;
+    try {
+      const nextFavState = !isFavorite;
+      const favKey = `@fav_${meal.idMeal}`;
+      
+      // Save favorite boolean as string in AsyncStorage
+      await AsyncStorage.setItem(favKey, nextFavState ? "true" : "false");
+      setIsFavorite(nextFavState);
+    } catch (err) {
+      console.error("Failed to save favorite state", err);
+    }
+  };
 
   // ── Loading State ────────────────────────────────────────────────────────
   if (loading) {
@@ -241,6 +277,22 @@ const FoodDetailScreen: React.FC<FoodDetailScreenProps> = ({ mealId }) => {
           {/* Gradient overlay at the bottom of the image for text readability */}
           <View style={styles.imageOverlay} />
 
+          {/* Floating Favorite Button (AsyncStorage Variable 1) */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={toggleFavorite}
+            style={[
+              styles.favoriteBtn,
+              {
+                top: Platform.OS === "ios" ? 48 : (StatusBar.currentHeight || 24) + 8,
+              },
+            ]}
+          >
+            <Text style={styles.favoriteIcon}>
+              {isFavorite ? "❤️" : "🤍"}
+            </Text>
+          </TouchableOpacity>
+
           {/* Floating meal ID badge — safely positioned below status bar notch */}
           <View
             style={[
@@ -258,6 +310,15 @@ const FoodDetailScreen: React.FC<FoodDetailScreenProps> = ({ mealId }) => {
         <View style={styles.contentBody}>
           {/* ── Title Section ─────────────────────────────────────────── */}
           <View style={styles.titleSection}>
+            {/* Last Viewed Recipe History Banner (AsyncStorage Variable 2) */}
+            {lastViewedName && lastViewedName !== meal.strMeal && (
+              <View style={styles.historyBanner}>
+                <Text style={styles.historyText}>
+                  ⏮️ Terakhir dilihat: {lastViewedName}
+                </Text>
+              </View>
+            )}
+
             <Text style={styles.mealTitle}>{meal.strMeal}</Text>
 
             {/*
@@ -452,6 +513,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.5,
   },
+  favoriteBtn: {
+    position: "absolute",
+    left: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(249, 115, 22, 0.4)",
+  },
+  favoriteIcon: {
+    fontSize: 18,
+  },
 
   // ── Content Body ─────────────────────────────────────────────────────────
   /**
@@ -478,6 +554,21 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+  },
+  historyBanner: {
+    backgroundColor: "rgba(249, 115, 22, 0.08)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(249, 115, 22, 0.15)",
+  },
+  historyText: {
+    color: ORANGE_LIGHT,
+    fontSize: 12,
+    fontWeight: "500",
+    letterSpacing: 0.2,
   },
   mealTitle: {
     fontSize: 26,
