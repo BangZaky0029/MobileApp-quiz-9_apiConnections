@@ -41,8 +41,3 @@ FlavorDash adalah aplikasi food delivery dan resep masakan berbasis mobile yang 
 **Stateless Authentication (JWT — JSON Web Token)** adalah mekanisme di mana **server TIDAK menyimpan status sesi sama sekali**.
 - **Cara Kerja**: Server memvalidasi login dan men-generate JWT (berisi payload data & signature kriptografi) untuk diberikan ke client. Client (aplikasi mobile) menyimpan token ini secara lokal (menggunakan AsyncStorage).
 - **Alasan Pemilihan JWT pada FlavorDash**: Sangat ideal untuk aplikasi mobile karena token disimpan secara lokal, membebaskan beban database server dari penyimpanan sesi, sangat *scalable*, dan sejalan dengan prinsip arsitektur RESTful API yang bersifat independen. Setiap API request cukup membawa token di *header* untuk divalidasi melalui signature-nya.
-
-
-4. Login credentials:
-Email: eve.holt@reqres.in
-Password: cityslicka
