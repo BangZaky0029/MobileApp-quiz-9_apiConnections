@@ -14,6 +14,7 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { View, Text, StyleSheet, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ORANGE = "#f97316";
 const BG_PRIMARY = "#0f0f0f";
@@ -21,11 +22,17 @@ const BG_TAB = "#141414";
 const TEXT_MUTED = "#737373";
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const baseHeight = 60;
+  // Ensure a minimum padding of 12 so it's lifted nicely, plus safe area
+  const paddingBottom = Math.max(insets.bottom, 12);
+  const totalHeight = baseHeight + paddingBottom;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { height: totalHeight, paddingBottom }],
         tabBarActiveTintColor: ORANGE,
         tabBarInactiveTintColor: TEXT_MUTED,
         tabBarLabelStyle: styles.tabLabel,
@@ -84,9 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: BG_TAB,
     borderTopWidth: 1,
     borderTopColor: "rgba(249, 115, 22, 0.1)",
-    height: Platform.OS === "ios" ? 88 : 64,
-    paddingTop: 6,
-    paddingBottom: Platform.OS === "ios" ? 24 : 8,
+    paddingTop: 8,
     elevation: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },

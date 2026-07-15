@@ -235,7 +235,6 @@ export default function DetailScreen() {
             style={styles.heroImage}
             resizeMode="cover"
           />
-          <View style={styles.imageOverlay} />
 
           {/* Back Button */}
           <TouchableOpacity
@@ -432,14 +431,6 @@ const styles = StyleSheet.create({
   heroImage: {
     width: "100%",
     aspectRatio: 16 / 10,
-  },
-  imageOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "40%",
-    backgroundColor: "rgba(15, 15, 15, 0.7)",
   },
 
   // ── Floating Buttons ───────────────────────────────────────────────────
