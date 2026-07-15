@@ -38,11 +38,3 @@ UAS - Pemograman Mobile Pak sandy
 
 Email: eve.holt@reqres.in
 Password: cityslicka
-
-⚠️ Penting untuk Maps:
-Untuk fitur Maps di Android, kamu perlu Google Maps API Key. Ganti YOUR_GOOGLE_MAPS_API_KEY di 
-
-app.json
- line 23. Kalau belum punya, Maps tetap bisa di-test di iOS simulator (pakai Apple Maps otomatis).
-
-Cek walkthrough lengkap untuk detail semua perubahan yang sudah dibuat! 🔥
